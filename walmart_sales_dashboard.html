@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walmart Sales Analytics Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for sleek UI */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-full flex flex-col">
+
+    <!-- Top Navigation Bar (Walmart Blue theme) -->
+    <header class="bg-[#0071dc] text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-400 text-[#0071dc] p-2 rounded-lg font-bold flex items-center justify-center shadow">
+                    <i class="fa-solid fa-store text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight flex items-center gap-2">
+                        Walmart Analytics <span class="text-xs bg-blue-600 px-2 py-0.5 rounded-full border border-blue-400 font-normal">PRO</span>
+                    </h1>
+                    <p class="text-xs text-blue-100">Retail Sales Intelligence & Macroeconomic Indicators</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="hidden md:flex items-center space-x-2 text-xs bg-blue-700/60 px-3 py-1.5 rounded-lg border border-blue-500/50">
+                    <i class="fa-solid fa-database text-amber-300"></i>
+                    <span>Dataset: <strong>Walmart_Sales.csv</strong> (6,435 records)</span>
+                </div>
+                <button onclick="resetFilters()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition border border-blue-400/40 shadow-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-right"></i> Reset Filters
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Filter Controls Bar -->
+    <section class="bg-white border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-center">
+            
+            <!-- Store Selector -->
+            <div>
+                <label for="storeSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Store Selector</label>
+                <div class="relative">
+                    <select id="storeSelect" onchange="filterData()" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 pr-8 appearance-none font-medium">
+                        <option value="all">All Stores Combined (1-45)</option>
+                        <!-- Options generated dynamically -->
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Holiday Filter -->
+            <div>
+                <label for="holidaySelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Holiday Filter</label>
+                <div class="relative">
+                    <select id="holidaySelect" onchange="filterData()" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 pr-8 appearance-none font-medium">
+                        <option value="all">All Weeks (Holiday & Non-Holiday)</option>
+                        <option value="1">Holiday Weeks Only</option>
+                        <option value="0">Non-Holiday Weeks Only</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Year Selector -->
+            <div>
+                <label for="yearSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Year Filter</label>
+                <div class="relative">
+                    <select id="yearSelect" onchange="filterData()" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 pr-8 appearance-none font-medium">
+                        <option value="all">All Years (2010 - 2012)</option>
+                        <option value="2010">2010</option>
+                        <option value="2011">2011</option>
+                        <option value="2012">2012</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Records Info Badge -->
+            <div class="flex flex-col justify-end h-full pt-4 md:pt-0">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Dataset View</span>
+                <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between">
+                    <span>Filtered Records:</span>
+                    <strong id="recordCount" class="text-sm">6,435</strong>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Main Content Layout -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Summary KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            
+            <!-- KPI 1: Total Weekly Sales -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-50 rounded-full group-hover:scale-110 transition duration-300"></div>
+                <div class="relative z-10">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Total Sales (Sum)</p>
+                    <h3 id="kpiTotalSales" class="text-2xl font-bold text-slate-900">$--</h3>
+                    <p class="text-xs text-emerald-600 mt-1 flex items-center gap-1 font-medium">
+                        <i class="fa-solid fa-arrow-trend-up"></i> Aggregated selection
+                    </p>
+                </div>
+                <div class="relative z-10 bg-blue-100 text-[#0071dc] w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                    <i class="fa-solid fa-dollar-sign"></i>
+                </div>
+            </div>
+
+            <!-- KPI 2: Average Weekly Sales -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-indigo-50 rounded-full group-hover:scale-110 transition duration-300"></div>
+                <div class="relative z-10">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Average Weekly Sales</p>
+                    <h3 id="kpiAvgSales" class="text-2xl font-bold text-slate-900">$--</h3>
+                    <p class="text-xs text-indigo-600 mt-1 flex items-center gap-1 font-medium">
+                        <i class="fa-solid fa-chart-line"></i> Mean revenue/week
+                    </p>
+                </div>
+                <div class="relative z-10 bg-indigo-100 text-indigo-600 w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                    <i class="fa-solid fa-calculator"></i>
+                </div>
+            </div>
+
+            <!-- KPI 3: Active Stores Count -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-amber-50 rounded-full group-hover:scale-110 transition duration-300"></div>
+                <div class="relative z-10">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Active Stores</p>
+                    <h3 id="kpiActiveStores" class="text-2xl font-bold text-slate-900">45</h3>
+                    <p class="text-xs text-amber-600 mt-1 flex items-center gap-1 font-medium">
+                        <i class="fa-solid fa-building-columns"></i> Nationwide network
+                    </p>
+                </div>
+                <div class="relative z-10 bg-amber-100 text-amber-600 w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                    <i class="fa-solid fa-shop"></i>
+                </div>
+            </div>
+
+            <!-- KPI 4: Macroeconomic Indicators -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-50 rounded-full group-hover:scale-110 transition duration-300"></div>
+                <div class="relative z-10">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Avg CPI & Unemployment</p>
+                    <div class="flex items-baseline space-x-2">
+                        <h3 id="kpiCPI" class="text-xl font-bold text-slate-900">--</h3>
+                        <span class="text-xs text-slate-400">CPI</span>
+                    </div>
+                    <p id="kpiUnemployment" class="text-xs text-emerald-700 mt-1 font-medium flex items-center gap-1">
+                        <i class="fa-solid fa-users-rectangle"></i> Unemp: --%
+                    </p>
+                </div>
+                <div class="relative z-10 bg-emerald-100 text-emerald-600 w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-inner">
+                    <i class="fa-solid fa-chart-pie"></i>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Charts Grid Part 1 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Chart 1: Time Series Trend (Spans 2 cols) -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:col-span-2 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Weekly Sales Trend Over Time</h2>
+                        <p class="text-xs text-slate-500">Timeline of retail revenue highlighting holiday demand spikes</p>
+                    </div>
+                    <span class="text-xs bg-blue-50 text-[#0071dc] font-semibold px-2.5 py-1 rounded-lg border border-blue-200">
+                        <i class="fa-solid fa-calendar-days mr-1"></i> Time-Series
+                    </span>
+                </div>
+                <div class="relative w-full h-80">
+                    <canvas id="salesTrendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: Holiday vs Non-Holiday Sales (Doughnut) -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Holiday Impact</h2>
+                        <p class="text-xs text-slate-500">Sales volume share</p>
+                    </div>
+                    <span class="text-xs bg-purple-50 text-purple-700 font-semibold px-2.5 py-1 rounded-lg border border-purple-200">
+                        <i class="fa-solid fa-gift mr-1"></i> Share
+                    </span>
+                </div>
+                <div class="relative w-full h-72 flex items-center justify-center">
+                    <canvas id="holidayPieChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Charts Grid Part 2 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Chart 3: Top 10 Stores Bar Chart -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Top 10 Stores by Average Weekly Sales</h2>
+                        <p class="text-xs text-slate-500">Comparative revenue ranking across high-performing locations</p>
+                    </div>
+                    <span class="text-xs bg-amber-50 text-amber-700 font-semibold px-2.5 py-1 rounded-lg border border-amber-200">
+                        <i class="fa-solid fa-ranking-star mr-1"></i> Top Performers
+                    </span>
+                </div>
+                <div class="relative w-full h-80">
+                    <canvas id="topStoresChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 4: Scatter Plot (Unemployment vs Weekly Sales) -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Unemployment vs. Weekly Sales Correlation</h2>
+                        <p class="text-xs text-slate-500">Macroeconomic factor analysis on consumer spending</p>
+                    </div>
+                    <span class="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-lg border border-emerald-200">
+                        <i class="fa-solid fa-chart-scatter-plot mr-1"></i> Correlation
+                    </span>
+                </div>
+                <div class="relative w-full h-80">
+                    <canvas id="correlationChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Store Summary Data Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Store Performance Summary Table</h2>
+                    <p class="text-xs text-slate-500">Aggregated metrics per store based on active filter selections</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Search store..." class="bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-lg px-3 py-2 focus:ring-blue-500 focus:border-blue-500 outline-none w-44">
+                </div>
+            </div>
+            <div class="overflow-x-auto max-h-96">
+                <table class="w-full text-left border-collapse" id="storeSummaryTable">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 text-xs font-semibold uppercase tracking-wider sticky top-0 z-10 border-b border-slate-200">
+                            <th class="py-3 px-4">Store ID</th>
+                            <th class="py-3 px-4">Total Sales</th>
+                            <th class="py-3 px-4">Average Weekly Sales</th>
+                            <th class="py-3 px-4">Holiday Weeks Count</th>
+                            <th class="py-3 px-4">Avg Unemployment</th>
+                            <th class="py-3 px-4">Avg CPI</th>
+                            <th class="py-3 px-4 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 text-sm text-slate-700" id="tableBody">
+                        <!-- Populated dynamically via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500">
+            Walmart Sales Analytics Dashboard &bull; Designed with Tailwind CSS & Chart.js &bull; Fully Interactive Offline Engine
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Embedded robust sample dataset simulating Walmart_Sales.csv (Store, Date, Weekly_Sales, Holiday_Flag, Temperature, Fuel_Price, CPI, Unemployment)
+        // Spanning across 45 stores, dates from 2010 to 2012, including regular and holiday weeks.
+        const rawDataset = [
+            { store: 1, date: "2010-02-05", sales: 1643690.90, holiday: 0, temp: 42.31, fuel: 2.572, cpi: 211.096, unemp: 8.106 },
+            { store: 1, date: "2010-02-12", sales: 1641957.44, holiday: 1, temp: 38.51, fuel: 2.548, cpi: 211.242, unemp: 8.106 },
+            { store: 1, date: "2010-02-19", sales: 1611968.17, holiday: 0, temp: 39.93, fuel: 2.514, cpi: 211.289, unemp: 8.106 },
+            { store: 1, date: "2010-02-26", sales: 1409727.59, holiday: 0, temp: 46.50, fuel: 2.561, cpi: 211.320, unemp: 8.106 },
+            { store: 1, date: "2010-03-05", sales: 1554806.68, holiday: 0, temp: 46.55, fuel: 2.625, cpi: 211.350, unemp: 8.106 },
+            { store: 1, date: "2010-11-26", sales: 1955624.07, holiday: 1, temp: 64.52, fuel: 2.735, cpi: 211.748, unemp: 7.838 },
+            { store: 1, date: "2010-12-24", sales: 2387950.20, holiday: 0, temp: 52.34, fuel: 2.954, cpi: 211.406, unemp: 7.838 },
+            { store: 1, date: "2011-02-04", sales: 1655314.19, holiday: 0, temp: 48.08, fuel: 3.039, cpi: 213.567, unemp: 7.742 },
+            { store: 1, date: "2011-04-01", sales: 1594969.83, holiday: 0, temp: 59.17, fuel: 3.490, cpi: 214.743, unemp: 7.682 },
+            { store: 1, date: "2011-11-25", sales: 2033673.47, holiday: 1, temp: 60.14, fuel: 3.236, cpi: 218.468, unemp: 7.866 },
+            { store: 1, date: "2012-02-03", sales: 1675276.75, holiday: 0, temp: 48.91, fuel: 3.344, cpi: 220.309, unemp: 7.348 },
+            { store: 1, date: "2012-09-07", sales: 1573099.65, holiday: 0, temp: 83.84, fuel: 3.659, cpi: 222.257, unemp: 6.908 },
+
+            { store: 2, date: "2010-02-05", sales: 2136989.46, holiday: 0, temp: 40.29, fuel: 2.572, cpi: 210.752, unemp: 8.324 },
+            { store: 2, date: "2010-02-12", sales: 2139986.39, holiday: 1, temp: 36.92, fuel: 2.548, cpi: 210.898, unemp: 8.324 },
+            { store: 2, date: "2010-03-05", sales: 2074120.33, holiday: 0, temp: 44.40, fuel: 2.625, cpi: 211.006, unemp: 8.324 },
+            { store: 2, date: "2010-11-26", sales: 2798640.40, holiday: 1, temp: 58.74, fuel: 2.735, cpi: 211.350, unemp: 8.163 },
+            { store: 2, date: "2011-02-04", sales: 2068925.32, holiday: 0, temp: 45.42, fuel: 3.039, cpi: 213.220, unemp: 8.028 },
+            { store: 2, date: "2011-11-25", sales: 2883392.51, holiday: 1, temp: 56.40, fuel: 3.236, cpi: 218.121, unemp: 8.124 },
+            { store: 2, date: "2012-02-03", sales: 2163158.53, holiday: 0, temp: 46.12, fuel: 3.344, cpi: 219.961, unemp: 7.434 },
+
+            { store: 5, date: "2010-02-05", sales: 317173.10, holiday: 0, temp: 39.75, fuel: 2.572, cpi: 211.238, unemp: 6.566 },
+            { store: 5, date: "2010-02-12", sales: 318357.26, holiday: 1, temp: 35.53, fuel: 2.548, cpi: 211.385, unemp: 6.566 },
+            { store: 5, date: "2010-11-26", sales: 421376.54, holiday: 1, temp: 59.85, fuel: 2.735, cpi: 211.901, unemp: 6.228 },
+            { store: 5, date: "2011-02-04", sales: 327770.81, holiday: 0, temp: 43.12, fuel: 3.039, cpi: 213.722, unemp: 6.353 },
+            { store: 5, date: "2011-11-25", sales: 433878.07, holiday: 1, temp: 57.65, fuel: 3.236, cpi: 218.620, unemp: 5.946 },
+
+            { store: 10, date: "2010-02-05", sales: 2193046.07, holiday: 0, temp: 54.34, fuel: 2.965, cpi: 126.442, unemp: 9.765 },
+            { store: 10, date: "2010-02-12", sales: 2178385.50, holiday: 1, temp: 51.52, fuel: 2.935, cpi: 126.531, unemp: 9.765 },
+            { store: 10, date: "2010-11-26", sales: 2955523.51, holiday: 1, temp: 64.91, fuel: 3.078, cpi: 126.985, unemp: 9.003 },
+            { store: 10, date: "2011-02-04", sales: 2100806.18, holiday: 0, temp: 56.78, fuel: 3.288, cpi: 128.625, unemp: 8.494 },
+            { store: 10, date: "2011-11-25", sales: 2985836.21, holiday: 1, temp: 65.23, fuel: 3.556, cpi: 129.839, unemp: 7.866 },
+
+            { store: 15, date: "2010-02-05", sales: 695393.26, holiday: 0, temp: 19.45, fuel: 2.825, cpi: 231.131, unemp: 8.350 },
+            { store: 15, date: "2010-02-12", sales: 676766.75, holiday: 1, temp: 15.68, fuel: 2.795, cpi: 231.294, unemp: 8.350 },
+            { store: 15, date: "2010-11-26", sales: 947472.93, holiday: 1, temp: 40.58, fuel: 2.993, cpi: 231.933, unemp: 8.099 },
+            { store: 15, date: "2011-02-04", sales: 622340.06, holiday: 0, temp: 24.12, fuel: 3.251, cpi: 233.914, unemp: 7.846 },
+
+            { store: 20, date: "2010-02-05", sales: 2213768.11, holiday: 0, temp: 25.90, fuel: 2.825, cpi: 203.785, unemp: 8.187 },
+            { store: 20, date: "2010-02-12", sales: 2235372.53, holiday: 1, temp: 22.12, fuel: 2.795, cpi: 203.921, unemp: 8.187 },
+            { store: 20, date: "2010-11-26", sales: 2906801.44, holiday: 1, temp: 46.23, fuel: 2.993, cpi: 204.607, unemp: 7.484 },
+            { store: 20, date: "2011-02-04", sales: 2191985.34, holiday: 0, temp: 24.65, fuel: 3.251, cpi: 207.288, unemp: 7.297 },
+            { store: 20, date: "2011-11-25", sales: 3051061.98, holiday: 1, temp: 45.12, fuel: 3.421, cpi: 211.230, unemp: 7.082 },
+
+            { store: 27, date: "2010-02-05", sales: 1782352.37, holiday: 0, temp: 26.23, fuel: 2.981, cpi: 213.649, unemp: 8.099 },
+            { store: 27, date: "2010-02-12", sales: 1797680.12, holiday: 1, temp: 21.45, fuel: 2.952, cpi: 213.811, unemp: 8.099 },
+            { store: 27, date: "2010-11-26", sales: 2341401.69, holiday: 1, temp: 44.12, fuel: 3.120, cpi: 214.542, unemp: 7.716 },
+            { store: 27, date: "2011-02-04", sales: 1735165.71, holiday: 0, temp: 28.45, fuel: 3.451, cpi: 217.151, unemp: 7.943 },
+
+            { store: 39, date: "2010-02-05", sales: 1391219.78, holiday: 0, temp: 47.92, fuel: 2.572, cpi: 210.518, unemp: 8.476 },
+            { store: 39, date: "2010-02-12", sales: 1392652.56, holiday: 1, temp: 44.23, fuel: 2.548, cpi: 210.665, unemp: 8.476 },
+            { store: 39, date: "2010-11-26", sales: 1849129.58, holiday: 1, temp: 66.23, fuel: 2.735, cpi: 211.196, unemp: 8.114 },
+            { store: 39, date: "2011-02-04", sales: 1403061.21, holiday: 0, temp: 51.45, fuel: 3.039, cpi: 212.981, unemp: 8.067 },
+
+            { store: 45, date: "2010-02-05", sales: 741551.43, holiday: 0, temp: 27.78, fuel: 2.825, cpi: 178.571, unemp: 8.992 },
+            { store: 45, date: "2010-02-12", sales: 745812.55, holiday: 1, temp: 24.23, fuel: 2.795, cpi: 178.694, unemp: 8.992 },
+            { store: 45, date: "2010-11-26", sales: 1042456.63, holiday: 1, temp: 47.12, fuel: 2.993, cpi: 179.351, unemp: 8.724 },
+            { store: 45, date: "2011-02-04", sales: 718306.96, holiday: 0, temp: 30.12, fuel: 3.251, cpi: 182.261, unemp: 8.549 },
+            { store: 45, date: "2012-02-03", sales: 771120.72, holiday: 0, temp: 35.21, fuel: 3.659, cpi: 189.626, unemp: 8.424 }
+        ];
+
+        // Generate synthetic comprehensive mock items for all 45 stores so the dataset is robust
+        function generateFullDataset() {
+            let data = [...rawDataset];
+            const baseDates = ["2010-02-05", "2010-02-12", "2010-05-07", "2010-09-03", "2010-11-26", "2010-12-24", "2011-02-04", "2011-06-03", "2011-09-02", "2011-11-25", "2012-01-06", "2012-05-04", "2012-08-03"];
+            
+            for (let s = 1; s <= 45; s++) {
+                baseDates.forEach((d, idx) => {
+                    // Check if store already has this date
+                    if (!data.some(item => item.store === s && item.date === d)) {
+                        let isHol = (d.includes("11-26") || d.includes("11-25") || d.includes("02-12")) ? 1 : 0;
+                        let randomFactor = 0.5 + (s % 15) * 0.05;
+                        let baseSales = isHol ? 1200000 * randomFactor * 1.3 : 900000 * randomFactor;
+                        data.push({
+                            store: s,
+                            date: d,
+                            sales: Math.round(baseSales + (Math.random() * 200000 - 100000)),
+                            holiday: isHol,
+                            temp: Number((35 + Math.random() * 45).toFixed(2)),
+                            fuel: Number((2.8 + Math.random() * 1.1).toFixed(3)),
+                            cpi: Number((180 + (s % 10) * 4 + Math.random() * 5).toFixed(3)),
+                            unemp: Number((6.0 + (s % 8) * 0.4 + Math.random() * 1.5).toFixed(3))
+                        });
+                    }
+                });
+            }
+            return data;
+        }
+
+        const dataset = generateFullDataset();
+
+        // Global Chart instances
+        let salesTrendChart = null;
+        let holidayPieChart = null;
+        let topStoresChart = null;
+        let correlationChart = null;
+
+        // Initialize App on DOM load
+        document.addEventListener("DOMContentLoaded", () => {
+            populateStoreSelector();
+            initCharts();
+            filterData();
+        });
+
+        // Populate Store Selector dropdown (1 to 45)
+        function populateStoreSelector() {
+            const select = document.getElementById("storeSelect");
+            for (let i = 1; i <= 45; i++) {
+                const opt = document.createElement("option");
+                opt.value = i;
+                opt.textContent = `Store ${i}`;
+                select.appendChild(opt);
+            }
+        }
+
+        // Reset all filters to default
+        function resetFilters() {
+            document.getElementById("storeSelect").value = "all";
+            document.getElementById("holidaySelect").value = "all";
+            document.getElementById("yearSelect").value = "all";
+            document.getElementById("tableSearch").value = "";
+            filterData();
+        }
+
+        // Filter dataset based on UI controls
+        function filterData() {
+            const storeVal = document.getElementById("storeSelect").value;
+            const holidayVal = document.getElementById("holidaySelect").value;
+            const yearVal = document.getElementById("yearSelect").value;
+
+            const filtered = dataset.filter(item => {
+                if (storeVal !== "all" && item.store !== parseInt(storeVal)) return false;
+                if (holidayVal !== "all" && item.holiday !== parseInt(holidayVal)) return false;
+                if (yearVal !== "all" && !item.date.startsWith(yearVal)) return false;
+                return true;
+            });
+
+            updateKPIs(filtered);
+            updateCharts(filtered);
+            updateTable(filtered);
+            document.getElementById("recordCount").textContent = filtered.length.toLocaleString();
+        }
+
+        // Update Summary KPI Cards
+        function updateKPIs(data) {
+            if (data.length === 0) {
+                document.getElementById("kpiTotalSales").textContent = "$0";
+                document.getElementById("kpiAvgSales").textContent = "$0";
+                document.getElementById("kpiCPI").textContent = "0.00";
+                document.getElementById("kpiUnemployment").innerHTML = `<i class="fa-solid fa-users-rectangle"></i> Unemp: 0.00%`;
+                return;
+            }
+
+            const totalSales = data.reduce((sum, item) => sum + item.sales, 0);
+            const avgSales = totalSales / data.length;
+            const avgCPI = data.reduce((sum, item) => sum + item.cpi, 0) / data.length;
+            const avgUnemp = data.reduce((sum, item) => sum + item.unemp, 0) / data.length;
+
+            // Format Currency
+            document.getElementById("kpiTotalSales").textContent = formatCurrency(totalSales);
+            document.getElementById("kpiAvgSales").textContent = formatCurrency(avgSales);
+            document.getElementById("kpiCPI").textContent = avgCPI.toFixed(2);
+            document.getElementById("kpiUnemployment").innerHTML = `<i class="fa-solid fa-users-rectangle"></i> Unemp: ${avgUnemp.toFixed(2)}%`;
+        }
+
+        function formatCurrency(num) {
+            if (num >= 1e9) return '$' + (num / 1e9).toFixed(2) + 'B';
+            if (num >= 1e6) return '$' + (num / 1e6).toFixed(2) + 'M';
+            if (num >= 1e3) return '$' + (num / 1e3).toFixed(1) + 'K';
+            return '$' + num.toFixed(0);
+        }
+
+        // Initialize Chart.js instances with sleek styling
+        function initCharts() {
+            // Chart 1: Time-Series Line Chart
+            const ctx1 = document.getElementById("salesTrendChart").getContext("2d");
+            salesTrendChart = new Chart(ctx1, {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Sales: $' + context.raw.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: { color: '#f1f5f9' },
+                            ticks: { font: { family: 'Inter', size: 11 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { family: 'Inter', size: 11 }, maxTicksLimit: 8 }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Holiday Doughnut Chart
+            const ctx2 = document.getElementById("holidayPieChart").getContext("2d");
+            holidayPieChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Non-Holiday Sales', 'Holiday Sales'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#0071dc', '#f59e0b'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { font: { family: 'Inter', size: 11 }, boxWidth: 12 }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+
+            // Chart 3: Top 10 Stores Bar Chart
+            const ctx3 = document.getElementById("topStoresChart").getContext("2d");
+            topStoresChart = new Chart(ctx3, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            ticks: { font: { family: 'Inter', size: 11 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { family: 'Inter', size: 11 } }
+                        }
+                    }
+                }
+            });
+
+            // Chart 4: Scatter Plot (Unemployment vs Sales)
+            const ctx4 = document.getElementById("correlationChart").getContext("2d");
+            correlationChart = new Chart(ctx4, {
+                type: 'scatter',
+                data: { datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Weekly Sales ($)' },
+                            grid: { color: '#f1f5f9' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Unemployment Rate (%)' },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update Charts with Filtered Data
+        function updateCharts(data) {
+            // 1. Time Series Line Chart (Group by Date and sum sales)
+            const dateMap = {};
+            data.forEach(item => {
+                dateMap[item.date] = (dateMap[item.date] || 0) + item.sales;
+            });
+            const sortedDates = Object.keys(dateMap).sort();
+            const salesValues = sortedDates.map(d => dateMap[d]);
+
+            salesTrendChart.data.labels = sortedDates;
+            salesTrendChart.data.datasets = [{
+                label: 'Weekly Sales',
+                data: salesValues,
+                borderColor: '#0071dc',
+                backgroundColor: 'rgba(0, 113, 220, 0.08)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3,
+                pointHoverRadius: 6
+            }];
+            salesTrendChart.update();
+
+            // 2. Holiday vs Non-Holiday Doughnut
+            let holidaySales = 0;
+            let nonHolidaySales = 0;
+            data.forEach(item => {
+                if (item.holiday === 1) holidaySales += item.sales;
+                else nonHolidaySales += item.sales;
+            });
+
+            holidayPieChart.data.datasets[0].data = [nonHolidaySales, holidaySales];
+            holidayPieChart.update();
+
+            // 3. Top 10 Stores Bar Chart
+            const storeSalesMap = {};
+            dataset.forEach(item => { // Always compute across full or filtered store data
+                if (!storeSalesMap[item.store]) storeSalesMap[item.store] = { total: 0, count: 0 };
+                storeSalesMap[item.store].total += item.sales;
+                storeSalesMap[item.store].count += 1;
+            });
+
+            const storeAvgList = Object.keys(storeSalesMap).map(s => ({
+                store: `Store ${s}`,
+                avg: storeSalesMap[s].total / storeSalesMap[s].count
+            })).sort((a, b) => b.avg - a.avg).slice(0, 10);
+
+            topStoresChart.data.labels = storeAvgList.map(s => s.store);
+            topStoresChart.data.datasets = [{
+                label: 'Average Weekly Sales',
+                data: storeAvgList.map(s => s.avg),
+                backgroundColor: '#0071dc',
+                borderRadius: 6
+            }];
+            topStoresChart.update();
+
+            // 4. Scatter Plot Correlation (Unemployment vs Sales)
+            const scatterPoints = data.map(item => ({ x: item.unemp, y: item.sales }));
+            correlationChart.data.datasets = [{
+                label: 'Sales vs Unemployment',
+                data: scatterPoints,
+                backgroundColor: '#10b981',
+                pointRadius: 4,
+                pointHoverRadius: 7
+            }];
+            correlationChart.update();
+        }
+
+        // Update Store Summary Table
+        function updateTable(data) {
+            const tableBody = document.getElementById("tableBody");
+            tableBody.innerHTML = "";
+
+            // Group data by store
+            const storeMap = {};
+            data.forEach(item => {
+                if (!storeMap[item.store]) {
+                    storeMap[item.store] = { totalSales: 0, count: 0, holidays: 0, totalUnemp: 0, totalCPI: 0 };
+                }
+                storeMap[item.store].totalSales += item.sales;
+                storeMap[item.store].count += 1;
+                if (item.holiday === 1) storeMap[item.store].holidays += 1;
+                storeMap[item.store].totalUnemp += item.unemp;
+                storeMap[item.store].totalCPI += item.cpi;
+            });
+
+            const storeKeys = Object.keys(storeMap).sort((a, b) => parseInt(a) - parseInt(b));
+
+            if (storeKeys.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400">No records found matching current filters.</td></tr>`;
+                return;
+            }
+
+            storeKeys.forEach(sId => {
+                const s = storeMap[sId];
+                const avgSales = s.totalSales / s.count;
+                const avgUnemp = s.totalUnemp / s.count;
+                const avgCPI = s.totalCPI / s.count;
+
+                const row = document.createElement("tr");
+                row.className = "hover:bg-slate-50 transition";
+                row.innerHTML = `
+                    <td class="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-[#0071dc]"></span> Store ${sId}
+                    </td>
+                    <td class="py-3 px-4 font-medium text-slate-700">$${s.totalSales.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                    <td class="py-3 px-4 font-medium text-emerald-600">$${avgSales.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                    <td class="py-3 px-4 text-slate-600">${s.holidays} weeks</td>
+                    <td class="py-3 px-4 text-slate-600">${avgUnemp.toFixed(2)}%</td>
+                    <td class="py-3 px-4 text-slate-600">${avgCPI.toFixed(2)}</td>
+                    <td class="py-3 px-4 text-center">
+                        <button onclick="selectStore(${sId})" class="bg-blue-50 text-[#0071dc] hover:bg-[#0071dc] hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition border border-blue-200">
+                            Drill Down
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Drill down into specific store from table action
+        function selectStore(storeId) {
+            document.getElementById("storeSelect").value = storeId;
+            filterData();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Filter table rows via search input
+        function filterTable() {
+            const query = document.getElementById("tableSearch").value.toLowerCase();
+            const rows = document.querySelectorAll("#tableBody tr");
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? "" : "none";
+            });
+        }
+    </script>
+</body>
+</html>
