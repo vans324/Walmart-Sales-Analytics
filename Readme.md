@@ -4,7 +4,7 @@ A responsive, single-file interactive data visualization dashboard built using *
 
 ---
 
-## 🌟 Key Features
+## 🌟 Features
 
 - **Header Controls & Dynamic Filtering**:
   - **Store Selector**: Drill down into specific stores (Store 1 to 45) or view aggregated metrics for all stores combined.
